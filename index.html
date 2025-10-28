@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Tiếng Anh 8 - Có Giải Thích và Xem Lại Lỗi Sai</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e0f2fe; /* Light sky blue background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .quiz-container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            max-width: 700px;
+            width: 100%;
+            border: 4px solid #3b82f6; /* Primary blue border */
+            animation: fadeIn 0.8s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .option-button {
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 10px;
+            text-align: left;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            border: 2px solid #d1d5db;
+            background-color: #f9fafb;
+            font-weight: 500;
+        }
+        .option-button:hover:not(.disabled):not(.correct):not(.incorrect) {
+            background-color: #eff6ff; /* Light blue hover */
+            border-color: #60a5fa;
+            transform: translateY(-1px);
+        }
+        .option-button.correct {
+            background-color: #d1fae5; /* Light green */
+            border-color: #10b981; /* Green */
+            font-weight: 700;
+            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Light red */
+            border-color: #ef4444; /* Red */
+            font-weight: 700;
+            box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);
+        }
+        .option-button.disabled {
+            cursor: default;
+        }
+        #feedback-message {
+            min-height: 30px;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+        .explanation-box {
+            background-color: #fffbeb; /* Light yellow */
+            border-left: 5px solid #f59e0b; /* Amber border */
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 0.95rem;
+            color: #78350f;
+            line-height: 1.4;
+        }
+        #result-screen, #review-screen {
+            display: none;
+            padding: 20px;
+            text-align: center;
+        }
+        .review-item {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            text-align: left;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .review-question {
+            font-weight: 700;
+            color: #3b82f6;
+            margin-bottom: 10px;
+        }
+        .review-user-answer {
+            color: #ef4444;
+            font-weight: 600;
+        }
+        .review-correct-answer {
+            color: #10b981;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <h1 class="text-3xl md:text-4xl font-extrabold text-blue-700 mb-6 border-b-2 border-blue-200 pb-3">
+        <i class="fas fa-brain mr-2"></i> Quiz Tiếng Anh 8 (Ôn Tập)
+    </h1>
+
+    <div id="quiz-screen">
+        <div class="flex justify-between items-center mb-4 text-gray-600">
+            <span id="score-display" class="text-xl font-bold text-green-600"><i class="fas fa-star mr-1"></i> Điểm: 0</span>
+            <span id="question-index" class="text-lg font-semibold text-blue-500">Câu 1 / 80</span>
+        </div>
+
+        <div id="question-box" class="bg-gray-50 p-5 rounded-xl mb-6 shadow-inner">
+            <p id="question-text" class="text-xl font-bold text-gray-800"></p>
+        </div>
+
+        <div id="options-container" class="grid gap-2">
+            <!-- Option buttons will be injected here -->
+        </div>
+
+        <div id="feedback-message" class="text-sm">
+            <!-- Feedback message will appear here -->
+        </div>
+        
+        <div id="explanation-box" class="explanation-box hidden">
+            <p class="font-bold mb-1 text-orange-700"><i class="fas fa-lightbulb mr-1"></i> Giải thích:</p>
+            <p id="explanation-text"></p>
+        </div>
+
+        <button id="next-button" class="mt-6 w-full py-3 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg shadow-md disabled:opacity-50 transition duration-150" disabled onclick="nextQuestion()">
+            Câu Tiếp Theo <i class="fas fa-arrow-right ml-2"></i>
+        </button>
+    </div>
+
+    <!-- Màn hình Kết quả -->
+    <div id="result-screen">
+        <h2 class="text-4xl font-extrabold text-gray-800 mb-4"><i class="fas fa-trophy text-yellow-500"></i> KẾT QUẢ</h2>
+        <p class="text-2xl mb-6">Bạn đã hoàn thành 80 câu hỏi!</p>
+        <p id="final-score" class="text-5xl font-extrabold text-green-600 mb-8"></p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button id="review-mistakes-button" class="py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg shadow-lg transition duration-150" onclick="showReviewScreen()">
+                <i class="fas fa-exclamation-triangle mr-2"></i> Xem Lại Các Lỗi Sai
+            </button>
+            <button id="restart-button" class="py-3 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-lg shadow-lg transition duration-150" onclick="restartQuiz()">
+                <i class="fas fa-redo-alt mr-2"></i> Ôn Tập Lại Từ Đầu
+            </button>
+        </div>
+    </div>
+
+    <!-- Màn hình Xem Lại Lỗi Sai -->
+    <div id="review-screen">
+        <h2 class="text-3xl font-extrabold text-red-600 mb-6"><i class="fas fa-book-open mr-2"></i> LỖI SAI CẦN RÚT KINH NGHIỆM</h2>
+        <div id="review-list" class="mb-6">
+            <!-- Mistake items will be injected here -->
+        </div>
+        <button class="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg shadow-md transition duration-150" onclick="showResult()">
+            <i class="fas fa-arrow-left mr-2"></i> Quay Lại Màn Hình Kết Quả
+        </button>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu 80 câu hỏi và giải thích
+    const quizData = [
+        { q: "The simple present tense is used to talk about ________.", options: ["actions happening now", "habits and general truths", "past actions", "future plans"], ans: "B", expl: "Thì Hiện tại đơn (Simple Present) được dùng để diễn tả thói quen, hành động lặp đi lặp lại hoặc các sự thật hiển nhiên/chân lý chung (general truths). Đáp án A là Hiện tại Tiếp diễn, C là Quá khứ đơn, D là kế hoạch Tương lai." },
+        { q: "“He ________ in Ho Chi Minh City.”", options: ["live", "living", "lives", "lived"], ans: "C", expl: "Chủ ngữ 'He' (ngôi thứ ba số ít) đi với động từ ở thì Hiện tại đơn phải thêm 's' hoặc 'es'. Do đó, 'lives' là đáp án đúng." },
+        { q: "The negative form of “She likes cats” is ________.", options: ["She doesn’t like cats.", "She don’t like cats.", "She isn’t like cats.", "She not likes cats."], ans: "A", expl: "Câu phủ định ở thì Hiện tại đơn có công thức: Chủ ngữ + do/does + not + V(nguyên mẫu). Với chủ ngữ 'She', ta dùng 'does not' (viết tắt là 'doesn’t')." },
+        { q: "Which sentence is in the present continuous tense?", options: ["He goes to school every day.", "He is going to school now.", "He go to school yesterday.", "He was going to school."], ans: "B", expl: "Thì Hiện tại Tiếp diễn (Present Continuous) có cấu trúc: Subject + be (am/is/are) + V-ing. 'He is going to school now' là câu đúng cấu trúc, diễn tả hành động đang xảy ra." },
+        { q: "The word “village” means ________.", options: ["thành phố", "tỉnh", "làng", "quận"], ans: "C", expl: "'Village' có nghĩa là 'ngôi làng', là một khu vực dân cư nhỏ hơn 'thành phố' (city) hoặc 'tỉnh' (province)." },
+        { q: "“Busy” has the opposite meaning of ________.", options: ["crowded", "calm", "noisy", "modern"], ans: "B", expl: "'Busy' có nghĩa là bận rộn, nhộn nhịp, hoặc đông đúc. 'Calm' có nghĩa là yên tĩnh, thanh bình, nên là từ trái nghĩa phù hợp nhất trong ngữ cảnh này." },
+        { q: "“Pollution” is a ________.", options: ["verb", "noun", "adjective", "adverb"], ans: "B", expl: "'Pollution' là danh từ, có nghĩa là sự ô nhiễm. Động từ tương ứng là 'pollute'." },
+        { q: "“Historic” refers to ________.", options: ["something new", "something modern", "something important in history", "something peaceful"], ans: "C", expl: "'Historic' là tính từ có nghĩa là (có ý nghĩa) lịch sử, liên quan đến những sự kiện quan trọng trong lịch sử." },
+        { q: "“He never eats breakfast.” → “never” is an ________.", options: ["adverb of time", "adverb of frequency", "adverb of place", "preposition"], ans: "B", expl: "'Never' là trạng từ chỉ tần suất (Adverb of Frequency), dùng để chỉ mức độ thường xuyên của hành động (0%)." },
+        { q: "“I am reading now.” → “now” signals ________.", options: ["present simple", "past simple", "present continuous", "future"], ans: "C", expl: "'Now' (bây giờ) là dấu hiệu nhận biết tiêu biểu cho thì Hiện tại Tiếp diễn (Present Continuous), diễn tả hành động đang xảy ra tại thời điểm nói." },
+        { q: "“They ________ English every day.”", options: ["studies", "study", "studying", "are study"], ans: "B", expl: "Trạng từ 'every day' (mỗi ngày) chỉ thì Hiện tại đơn. Chủ ngữ 'They' (số nhiều) đi với động từ nguyên mẫu không 's'/'es', tức là 'study'." },
+        { q: "“He doesn’t play football.” → “doesn’t” stands for ________.", options: ["does + not", "do + not", "did + not", "don’t"], ans: "A", expl: "'Doesn’t' là dạng viết tắt của 'does not'. 'Does' là trợ động từ dùng cho ngôi thứ ba số ít (He/She/It) ở thì Hiện tại đơn." },
+        { q: "Which of the following is a natural disaster?", options: ["volcano", "car crash", "accident", "relief"], ans: "A", expl: "'Volcano' (núi lửa) là một hiện tượng tự nhiên, được xếp vào nhóm thiên tai (natural disaster). Các đáp án còn lại là tai nạn (accident/car crash) hoặc sự cứu trợ (relief)." },
+        { q: "The past form of “go” is ________.", options: ["goed", "going", "gone", "went"], ans: "D", expl: "'Go' là một động từ bất quy tắc. Quá khứ đơn của 'go' là 'went', và quá khứ phân từ là 'gone'." },
+        { q: "The past form of “be” (plural subject) is ________.", options: ["was", "were", "is", "are"], ans: "B", expl: "Động từ 'to be' ở thì Quá khứ đơn có hai dạng: 'was' (dùng cho I, He, She, It) và 'were' (dùng cho You, We, They và danh từ số nhiều)." },
+        { q: "“Flood” means ________.", options: ["trận động đất", "vụ nổ", "trận lụt", "vụ đắm tàu"], ans: "C", expl: "'Flood' là danh từ, có nghĩa là 'trận lụt' hay 'lũ lụt'." },
+        { q: "The word “terrified” means ________.", options: ["angry", "tired", "afraid", "happy"], ans: "C", expl: "'Terrified' là tính từ có nghĩa là rất sợ hãi, khiếp đảm, đồng nghĩa với 'afraid' (sợ hãi)." },
+        { q: "“He was studying when I came.” → The tense of “was studying” is ________.", options: ["past continuous", "present continuous", "past simple", "present perfect"], ans: "A", expl: "'Was studying' có cấu trúc 'was/were + V-ing', đây là thì Quá khứ Tiếp diễn (Past Continuous), diễn tả hành động đang diễn ra tại một thời điểm trong quá khứ." },
+        { q: "“Yesterday” is the signal word for ________.", options: ["present simple", "present continuous", "past simple", "future"], ans: "C", expl: "'Yesterday' (hôm qua) là trạng từ chỉ thời gian rõ ràng trong quá khứ, dấu hiệu nhận biết của thì Quá khứ đơn (Past Simple)." },
+        { q: "“I watched TV last night.” → The verb “watched” ends with the sound ________.", options: ["/ɪd/", "/t/", "/d/", "/z/"], ans: "B", expl: "Quy tắc phát âm đuôi '-ed': Nếu động từ kết thúc bằng các âm vô thanh như /p/, /f/, /s/, /ʃ/, /tʃ/, /k/ thì '-ed' được phát âm là /t/. 'Watch' kết thúc bằng âm /tʃ/." },
+        { q: "“She is cooking.” → question form is ________.", options: ["Does she cook?", "Is she cooking?", "She is cooking?", "Did she cook?"], ans: "B", expl: "Đây là câu ở thì Hiện tại Tiếp diễn. Câu hỏi Yes/No có cấu trúc: Be (Is/Are/Am) + Subject + V-ing? ('Is she cooking?')." },
+        { q: "“They didn’t go to school.” → “didn’t” stands for ________.", options: ["do not", "does not", "did not", "have not"], ans: "C", expl: "'Didn’t' là dạng viết tắt của 'did not'. 'Did' là trợ động từ dùng cho thì Quá khứ đơn." },
+        { q: "“I was watching TV at 9 p.m. yesterday.” → This describes ________.", options: ["a habit", "an action happening at a past time", "a future plan", "a routine"], ans: "B", expl: "Thì Quá khứ Tiếp diễn (was watching) đi kèm với thời điểm cụ thể trong quá khứ (at 9 p.m. yesterday) để diễn tả một hành động đang xảy ra tại thời điểm đó." },
+        { q: "“She ________ to school when it rained.”", options: ["is walking", "walks", "was walking", "walked"], ans: "C", expl: "Đây là sự kết hợp giữa hai thì: Quá khứ Tiếp diễn ('was walking') diễn tả hành động dài (đang đi) bị một hành động ngắn hơn ở Quá khứ đơn ('rained') cắt ngang." },
+        { q: "“Relieved” describes ________.", options: ["a person’s feeling", "a place", "a time", "a color"], ans: "A", expl: "'Relieved' là tính từ chỉ cảm xúc, có nghĩa là cảm thấy nhẹ nhõm, dùng để mô tả cảm giác của con người (a person’s feeling)." },
+        { q: "“Volcano” is related to ________.", options: ["explosion", "flood", "traffic", "forest"], ans: "A", expl: "Núi lửa (Volcano) phun trào thường kèm theo sự bùng nổ (explosion) của dung nham, khí gas và tro bụi." },
+        { q: "The present continuous form of “He plays” is ________.", options: ["He play.", "He is playing.", "He playing.", "He playsing."], ans: "B", expl: "Hiện tại Tiếp diễn có công thức S + be (is/am/are) + V-ing. Với chủ ngữ 'He', ta dùng 'He is playing'." },
+        { q: "“While” often goes with which tense?", options: ["present simple", "present perfect", "past continuous", "future"], ans: "C", expl: "Liên từ 'while' (trong khi) thường được dùng để liên kết hai hành động dài đang song song xảy ra trong quá khứ, sử dụng thì Quá khứ Tiếp diễn (Past Continuous)." },
+        { q: "“He ________ a picture now.”", options: ["draws", "is drawing", "draw", "drew"], ans: "B", expl: "Trạng từ 'now' (bây giờ) là dấu hiệu của thì Hiện tại Tiếp diễn. Cấu trúc: He + is + drawing." },
+        { q: "“I want to visit the city.” → “to visit” is a(n) ________.", options: ["-ing form", "bare infinitive", "to-infinitive", "noun"], ans: "C", expl: "'To visit' là một động từ nguyên mẫu có 'to' (to-infinitive). Trong câu này, nó đóng vai trò là tân ngữ, theo sau động từ 'want'." },
+        { q: "Choose the sentence in the past simple tense:", options: ["I am studying now.", "I study English every day.", "I studied English yesterday.", "I will study English tomorrow."], ans: "C", expl: "Thì Quá khứ đơn dùng V2/V-ed. 'I studied English yesterday' có động từ 'studied' và dấu hiệu 'yesterday'." },
+        { q: "Choose the sentence in the past continuous tense:", options: ["I was reading when you called.", "I read when you called.", "I am reading now.", "I read books every day."], ans: "A", expl: "Thì Quá khứ Tiếp diễn có cấu trúc S + was/were + V-ing. 'I was reading' là ví dụ đúng. Câu này diễn tả hành động đang xảy ra bị hành động khác cắt ngang." },
+        { q: "“She usually gets up at 6 a.m.” → “usually” means ________.", options: ["100%", "0%", "about 70–80%", "once a month"], ans: "C", expl: "'Usually' (thường xuyên) là trạng từ chỉ tần suất ở mức độ cao, khoảng 70–80%. 'Always' là 100%, 'never' là 0%." },
+        { q: "“Historic building” means ________.", options: ["a modern building", "a new construction", "a building important in history", "a future project"], ans: "C", expl: "'Historic building' là 'tòa nhà lịch sử', tức là một tòa nhà quan trọng về mặt lịch sử (important in history)." },
+        { q: "“I was cooking when the phone rang.” → The phone ringing is the ________ action.", options: ["longer", "shorter", "continuous", "repeated"], ans: "B", expl: "Hành động dài ('was cooking') bị hành động ngắn, chấm dứt ('the phone rang' - quá khứ đơn) cắt ngang. 'The phone ringing' là hành động ngắn hơn." },
+        { q: "“He’s considering moving to the city.” → “moving” is a(n) ________.", options: ["infinitive", "gerund", "adjective", "preposition"], ans: "B", expl: "Động từ 'consider' (cân nhắc) là một trong các động từ theo sau là V-ing (danh động từ hay gerund). Do đó, 'moving' là gerund." },
+        { q: "“They decided to go to Paris.” → “to go” follows the verb “decide”, so it’s a ________.", options: ["gerund", "to-infinitive", "adjective phrase", "bare infinitive"], ans: "B", expl: "Động từ 'decide' (quyết định) là một trong các động từ theo sau là động từ nguyên mẫu có 'to' (to-infinitive)." },
+        { q: "“She made me cry.” → “cry” is a ________.", options: ["to-infinitive", "gerund", "infinitive without to", "adjective"], ans: "C", expl: "Động từ 'make' (khi ở cấu trúc sai khiến 'make somebody do something') đi kèm với động từ nguyên mẫu không 'to' (bare infinitive/infinitive without to)." },
+        { q: "“They can swim.” → “swim” is a(n) ________.", options: ["gerund", "infinitive", "infinitive without to", "verb-ed"], ans: "C", expl: "Động từ theo sau động từ khuyết thiếu (modal verb) như 'can' phải là động từ nguyên mẫu không 'to' (bare infinitive/infinitive without to)." },
+        { q: "Choose the correct sentence:", options: ["She doesn’t studying English.", "She isn’t study English.", "She doesn’t study English.", "She don’t studies English."], ans: "C", expl: "Câu đúng ở thì Hiện tại đơn, phủ định: 'She' dùng 'doesn’t', động từ chính ('study') phải ở dạng nguyên mẫu. 'She doesn’t study English' là câu chính xác." },
+        { q: "“He works in a big city.” → question form:", options: ["Does he work in a big city?", "Do he work in a big city?", "Is he work in a big city?", "Did he work in a big city?"], ans: "A", expl: "Câu hỏi Yes/No ở Hiện tại đơn với chủ ngữ 'He' (ngôi 3 số ít) dùng trợ động từ 'Does' và động từ chính ('work') ở dạng nguyên mẫu." },
+        { q: "“We were watching TV when it ________.”", options: ["rains", "was raining", "rained", "rain"], ans: "C", expl: "Hành động dài ('were watching' - Quá khứ Tiếp diễn) bị hành động ngắn ('rained' - Quá khứ đơn) cắt ngang. Cần chia thì Quá khứ đơn cho hành động cắt ngang." },
+        { q: "“They were playing football ________ 6 p.m. yesterday.”", options: ["on", "at", "in", "since"], ans: "B", expl: "Giới từ 'at' được dùng để chỉ một thời điểm cụ thể (at 6 p.m.) trong ngày. Giới từ 'on' dùng cho thứ, ngày; 'in' dùng cho tháng, năm, mùa, buổi." },
+        { q: "“What are you doing tomorrow night?” → This expresses ________.", options: ["habit", "present", "planned future", "command"], ans: "C", expl: "Thì Hiện tại Tiếp diễn (are doing) có thể được dùng để diễn tả một kế hoạch đã được sắp xếp chắc chắn cho tương lai ('tomorrow night')." },
+        { q: "Choose the correct form: “The baby ________ peacefully in her arms.”", options: ["sleep", "sleeps", "slept", "sleeping"], ans: "C", expl: "Câu này có lẽ thiếu ngữ cảnh, nhưng 'slept' (Quá khứ đơn) hoặc 'is sleeping' (Hiện tại Tiếp diễn) là phổ biến. Tuy nhiên, trong danh sách gốc là 'slept', giả định câu đang kể về một sự việc đã xảy ra trong quá khứ." },
+        { q: "“He ________ to the countryside every weekend.”", options: ["go", "goes", "is going", "gone"], ans: "B", expl: "Dấu hiệu 'every weekend' chỉ thì Hiện tại đơn. Chủ ngữ 'He' (ngôi thứ ba số ít) phải thêm 'es' vào động từ 'go', thành 'goes'." },
+        { q: "“She is reading a book.” → The verb “is” shows ________.", options: ["simple present", "auxiliary verb", "modal verb", "main verb"], ans: "B", expl: "Trong cấu trúc Hiện tại Tiếp diễn (is reading), 'is' là trợ động từ (auxiliary verb) giúp chia thì, còn 'reading' là động từ chính." },
+        { q: "“She looks tired.” → The word “tired” is a(n) ________.", options: ["verb", "noun", "adjective", "adverb"], ans: "C", expl: "'Tired' là tính từ (adjective), mô tả trạng thái mệt mỏi của chủ ngữ. 'Looks' ở đây là linking verb." },
+        { q: "“Because” introduces ________.", options: ["reason", "result", "time", "contrast"], ans: "A", expl: "Liên từ 'because' (bởi vì) luôn được dùng để giới thiệu mệnh đề chỉ lý do (reason) hoặc nguyên nhân." },
+        { q: "“While I was doing homework, mom ________ dinner.”", options: ["cooks", "was cooking", "cooked", "cooking"], ans: "B", expl: "'While' thường dùng để nối hai hành động dài song song xảy ra trong quá khứ, nên cả hai mệnh đề đều dùng thì Quá khứ Tiếp diễn ('was doing' và 'was cooking')." },
+        { q: "“He walked to school yesterday.” → “walked” is pronounced with the ending sound:", options: ["/t/", "/d/", "/ɪd/", "/z/"], ans: "A", expl: "Động từ 'walk' kết thúc bằng âm /k/ (vô thanh), nên đuôi '-ed' được phát âm là /t/." },
+        { q: "“When we were singing, the lights went out.” → Which tense for “went out”?", options: ["past continuous", "past simple", "present simple", "future"], ans: "B", expl: "'Went out' là Quá khứ đơn (Past Simple) của 'go out', diễn tả hành động ngắn (đèn tắt) cắt ngang hành động dài (đang hát) trong quá khứ." },
+        { q: "“We plan to travel next month.” → “to travel” shows ________.", options: ["reason", "purpose", "time", "emotion"], ans: "B", expl: "Mặc dù 'plan' theo sau là to-V, nhưng ở đây 'to travel' chỉ mục đích của kế hoạch (plan to do what?). Đáp án phổ biến trong ngữ cảnh học thuật là 'purpose' (mục đích)." },
+        { q: "“They were not listening.” → contracted form:", options: ["They weren’t listening.", "They didn’t listening.", "They wasn’t listening.", "They aren’t listening."], ans: "A", expl: "'Were not' được viết tắt là 'weren’t'. 'Wasn’t' dùng cho ngôi số ít." },
+        { q: "“He is making a cake tomorrow.” → “is making” expresses a ________.", options: ["habit", "future plan", "request", "fact"], ans: "B", expl: "Thì Hiện tại Tiếp diễn (is making) đi kèm với từ chỉ tương lai ('tomorrow') diễn tả một kế hoạch đã được sắp xếp trước ('planned future')." },
+        { q: "“Earthquake” is a noun that means ________.", options: ["bão", "động đất", "núi lửa", "sóng thần"], ans: "B", expl: "'Earthquake' có nghĩa là 'trận động đất', một thiên tai do sự rung chuyển của vỏ Trái Đất." },
+        { q: "“Pollute” is the ________ form of “pollution.”", options: ["verb", "adjective", "adverb", "noun"], ans: "A", expl: "'Pollute' là động từ (verb), có nghĩa là gây ô nhiễm. 'Pollution' là danh từ (noun)." },
+        { q: "“Calm” means ________.", options: ["peaceful", "noisy", "polluted", "crowded"], ans: "A", expl: "'Calm' có nghĩa là yên tĩnh, bình yên, đồng nghĩa với 'peaceful'." },
+        { q: "“Skyscraper” means ________.", options: ["nhà nhỏ", "tòa nhà chọc trời", "cây cầu", "ngôi làng"], ans: "B", expl: "'Skyscraper' là 'tòa nhà chọc trời', một tòa nhà rất cao trong thành phố." },
+        { q: "“The children were playing when the teacher came.” → Which is true?", options: ["Both actions happened at the same time.", "One was long, one short.", "The teacher came first.", "Both finished at once."], ans: "B", expl: "Đây là sự kết hợp giữa Quá khứ Tiếp diễn (hành động dài: 'were playing') và Quá khứ đơn (hành động ngắn: 'came'). Hành động ngắn cắt ngang hành động dài." },
+        { q: "“When the volcano erupted, people ________ in their houses.”", options: ["slept", "were sleeping", "sleep", "are sleeping"], ans: "B", expl: "Sự phun trào của núi lửa (erupted - Quá khứ đơn) là hành động ngắn, xảy ra khi mọi người đang ngủ (were sleeping - Quá khứ Tiếp diễn)." },
+        { q: "“He ________ dinner when the earthquake started.”", options: ["cooks", "is cooking", "was cooking", "cook"], ans: "C", expl: "Động đất (started - Quá khứ đơn) xảy ra khi anh ấy đang nấu ăn (was cooking - Quá khứ Tiếp diễn). Hành động đang diễn ra bị cắt ngang." },
+        { q: "“We are going to Da Lat ________ next weekend.”", options: ["at", "on", "in", "–"], ans: "D", expl: "Các cụm từ chỉ thời gian bắt đầu bằng 'next' (next weekend, next month...) không cần dùng giới từ (preposition) đi kèm. Chọn đáp án '–' (không giới từ)." },
+        { q: "“She’s going to the market to buy some fruit.” → “to buy” expresses ________.", options: ["reason", "purpose", "order", "request"], ans: "B", expl: "Cấu trúc 'to buy' (để mua) đứng sau mệnh đề chính diễn tả mục đích của hành động ('going to the market')." },
+        { q: "“The villagers ________ very worried after the flood.”", options: ["were", "was", "are", "be"], ans: "A", expl: "Chủ ngữ 'The villagers' là danh từ số nhiều, nên động từ 'to be' ở Quá khứ đơn phải là 'were'." },
+        { q: "“I am watching a movie with my friends tonight.” → This describes a ________.", options: ["fact", "plan for future", "habit", "past action"], ans: "B", expl: "Hiện tại Tiếp diễn (am watching) đi kèm với 'tonight' diễn tả một kế hoạch đã sắp xếp trong tương lai gần (plan for future)." },
+        { q: "“While he ________ TV, the lights went out.”", options: ["watches", "watched", "was watching", "watch"], ans: "C", expl: "'While' dùng để chỉ hành động đang diễn ra (was watching - Quá khứ Tiếp diễn) bị hành động khác (went out - Quá khứ đơn) cắt ngang." },
+        { q: "“They enjoyed ________ in the countryside.”", options: ["live", "living", "to live", "lives"], ans: "B", expl: "Động từ 'enjoy' (thích) phải được theo sau bởi danh động từ (gerund), tức là V-ing. Do đó, đáp án là 'living'." },
+        { q: "“Let me ________ your phone.”", options: ["to use", "using", "use", "uses"], ans: "C", expl: "Cấu trúc sai khiến với 'let' là 'Let somebody do something' (động từ nguyên mẫu không 'to')." },
+        { q: "“Would you like ________ coffee?”", options: ["drink", "to drink", "drinking", "drank"], ans: "B", expl: "Cấu trúc 'Would you like' (bạn có muốn...) luôn đi kèm với động từ nguyên mẫu có 'to' (to-infinitive)." },
+        { q: "“I didn’t go out because it ________ heavily.”", options: ["rains", "rained", "was raining", "raining"], ans: "C", expl: "Hành động 'didn’t go out' (Quá khứ đơn) là kết quả của một hành động đang diễn ra ('was raining' - Quá khứ Tiếp diễn) tại thời điểm đó trong quá khứ. Trời mưa là lý do đang xảy ra khiến tôi không ra ngoài." },
+        { q: "“He was doing his homework while his sister ________ dinner.”", options: ["cooked", "was cooking", "cooks", "cooking"], ans: "B", expl: "'While' dùng để nối hai hành động dài song song trong quá khứ. Cả hai đều dùng Quá khứ Tiếp diễn ('was doing' và 'was cooking')." },
+        { q: "“The boy fell while he ________ the stairs.”", options: ["runs", "ran", "was running", "running"], ans: "C", expl: "Hành động ngắn ('fell' - Quá khứ đơn) cắt ngang hành động dài đang xảy ra ('was running' - Quá khứ Tiếp diễn)." },
+        { q: "“My father let me ________ his car.”", options: ["drive", "to drive", "driving", "drove"], ans: "A", expl: "Cấu trúc sai khiến với 'let' là 'Let somebody do something' (động từ nguyên mẫu không 'to')." },
+        { q: "“I was so ________ when I heard good news.”", options: ["terrify", "terrified", "terrifying", "terrifies"], ans: "B", expl: "Tính từ đuôi '-ed' (terrified) dùng để diễn tả cảm xúc của người (tôi cảm thấy sợ hãi/kinh hãi). Tính từ đuôi '-ing' (terrifying) dùng để mô tả bản chất của sự vật/sự việc (gây ra cảm giác đó)." },
+        { q: "“The explosion ________ many people injured.”", options: ["causes", "caused", "causing", "was caused"], ans: "B", expl: "Sự việc 'explosion' (vụ nổ) đã xảy ra trong quá khứ và gây ra kết quả là 'nhiều người bị thương'. Cần dùng thì Quá khứ đơn (caused)." },
+        { q: "“She wasn’t at home when I called.” → Which is correct?", options: ["She was going out.", "She is cooking.", "She goes out.", "She had gone to bed."], ans: "A", expl: "Hành động đang diễn ra ('was going out' - Quá khứ Tiếp diễn) là lý do cho việc cô ấy không có nhà khi tôi gọi (hành động Quá khứ đơn)." },
+        { q: "“We were studying English ________ 9 p.m. last night.”", options: ["on", "at", "in", "for"], ans: "B", expl: "Giới từ 'at' dùng để chỉ một thời điểm cụ thể (9 p.m.) trong quá khứ. Thì Quá khứ Tiếp diễn thường đi kèm với giới từ 'at'." },
+        { q: "“The traffic was heavy, so we decided ________ the bus.”", options: ["take", "took", "taking", "to take"], ans: "D", expl: "Động từ 'decide' (quyết định) luôn được theo sau bởi động từ nguyên mẫu có 'to' (to-infinitive)." },
+        { q: "“While the teacher was explaining, the students ________ notes.”", options: ["took", "take", "were taking", "taking"], ans: "C", expl: "'While' nối hai hành động dài song song trong quá khứ. Hành động thứ hai cũng phải dùng Quá khứ Tiếp diễn ('were taking')." },
+        { q: "The word “village” has ________ syllables.", options: ["one", "two", "three", "four"], ans: "B", expl: "Từ 'village' được chia thành hai âm tiết: 'vil' và 'lage'. Phát âm là /ˈvɪl.ɪdʒ/." },
+        { q: "The correct pronunciation of 'lived' (in 'He lived here') is:", options: ["/lɪvɪd/", "/lɪvd/", "/lɪft/", "/lɪvz/"], ans: "B", expl: "Động từ 'live' kết thúc bằng âm /v/ (hữu thanh), nên đuôi '-ed' được phát âm là /d/. (/lɪvd/)." },
+        { q: "Which word means 'an area built up with high, tall buildings'?", options: ["countryside", "slum", "suburb", "city center"], ans: "D", expl: "'City center' (trung tâm thành phố) là khu vực đô thị thường có nhiều tòa nhà cao tầng và tập trung các hoạt động kinh tế, thương mại." },
+        { q: "The structure 'V-ing' is used after the verb 'enjoy'.", options: ["True", "False", "Sometimes true", "Only with specific nouns"], ans: "A", expl: "Động từ 'enjoy' (thích, tận hưởng) luôn phải theo sau bởi danh động từ (gerund - V-ing). Cấu trúc: Enjoy + V-ing." }
+    ];
+    
+    // Khởi tạo các biến toàn cục
+    const optionLabels = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let quizActive = true;
+    let mistakes = []; // Lưu trữ các câu trả lời sai
+
+    const questionText = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+    const feedbackMessage = document.getElementById('feedback-message');
+    const nextButton = document.getElementById('next-button');
+    const scoreDisplay = document.getElementById('score-display');
+    const questionIndexDisplay = document.getElementById('question-index');
+    const quizScreen = document.getElementById('quiz-screen');
+    const resultScreen = document.getElementById('result-screen');
+    const finalScoreDisplay = document.getElementById('final-score');
+    const explanationBox = document.getElementById('explanation-box');
+    const explanationText = document.getElementById('explanation-text');
+    const reviewScreen = document.getElementById('review-screen');
+    const reviewList = document.getElementById('review-list');
+
+
+    function loadQuestion() {
+        if (currentQuestionIndex >= quizData.length) {
+            showResult();
+            return;
+        }
+
+        const currentQuestion = quizData[currentQuestionIndex];
+        const totalQuestions = quizData.length;
+
+        // Reset state
+        nextButton.disabled = true;
+        nextButton.classList.add('opacity-50');
+        feedbackMessage.textContent = '';
+        feedbackMessage.className = 'text-sm';
+        optionsContainer.innerHTML = '';
+        explanationBox.classList.add('hidden'); // Ẩn giải thích
+        
+        // Update display
+        questionIndexDisplay.textContent = `Câu ${currentQuestionIndex + 1} / ${totalQuestions}`;
+        questionText.textContent = `${currentQuestion.q}`;
+
+        // Create option buttons
+        ['A', 'B', 'C', 'D'].forEach((label, index) => {
+            const optionButton = document.createElement('button');
+            optionButton.className = 'option-button shadow-sm';
+            optionButton.setAttribute('data-label', label);
+            optionButton.innerHTML = `<span class="font-extrabold mr-2">${label}.</span> ${currentQuestion.options[index]}`;
+            optionButton.onclick = () => checkAnswer(label);
+            optionsContainer.appendChild(optionButton);
+        });
+    }
+
+    function checkAnswer(selectedLabel) {
+        if (!quizActive) return;
+
+        const currentQuestion = quizData[currentQuestionIndex];
+        const correctAnswerLabel = currentQuestion.ans;
+        const isCorrect = (selectedLabel === correctAnswerLabel);
+
+        // Disable all buttons and highlight
+        Array.from(optionsContainer.children).forEach(btn => {
+            btn.classList.add('disabled');
+            btn.onclick = null;
+            const btnLabel = btn.getAttribute('data-label');
+            if (btnLabel === correctAnswerLabel) {
+                btn.classList.add('correct');
+            } else if (btnLabel === selectedLabel) {
+                btn.classList.add('incorrect');
+            }
+        });
+
+        // Update score and feedback
+        if (isCorrect) {
+            score++;
+            scoreDisplay.textContent = `⭐ Điểm: ${score}`;
+            feedbackMessage.innerHTML = '<span class="text-green-600 font-extrabold"><i class="fas fa-check-circle mr-1"></i> Chính xác!</span>';
+            feedbackMessage.classList.add('bg-green-100', 'border-2', 'border-green-400', 'p-2', 'rounded-lg');
+            explanationBox.classList.add('hidden'); // Ẩn giải thích nếu đúng
+        } else {
+            // Thêm vào danh sách lỗi sai
+            mistakes.push({
+                question: currentQuestion.q,
+                userAnswer: currentQuestion.options[optionLabels[selectedLabel]],
+                correctAnswer: currentQuestion.options[optionLabels[correctAnswerLabel]],
+                explanation: currentQuestion.expl,
+                userLabel: selectedLabel,
+                correctLabel: correctAnswerLabel
+            });
+
+            feedbackMessage.innerHTML = `<span class="text-red-600 font-extrabold"><i class="fas fa-times-circle mr-1"></i> Sai rồi.</span> Đáp án đúng là <span class="text-blue-600 font-extrabold">${correctAnswerLabel}</span>.`;
+            feedbackMessage.classList.add('bg-red-100', 'border-2', 'border-red-400', 'p-2', 'rounded-lg');
+            
+            // Hiển thị giải thích chi tiết
+            explanationText.textContent = currentQuestion.expl;
+            explanationBox.classList.remove('hidden');
+        }
+
+        // Enable next button
+        nextButton.disabled = false;
+        nextButton.classList.remove('opacity-50');
+    }
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+        loadQuestion();
+    }
+
+    function showResult() {
+        quizActive = false;
+        quizScreen.style.display = 'none';
+        reviewScreen.style.display = 'none';
+        resultScreen.style.display = 'block';
+        finalScoreDisplay.textContent = `${score} / ${quizData.length}`;
+        
+        const reviewButton = document.getElementById('review-mistakes-button');
+        if (mistakes.length === 0) {
+            reviewButton.disabled = true;
+            reviewButton.classList.add('opacity-50');
+            reviewButton.textContent = '🥳 Bạn không có lỗi sai nào!';
+        } else {
+            reviewButton.disabled = false;
+            reviewButton.classList.remove('opacity-50');
+            reviewButton.textContent = `⚠️ Xem Lại ${mistakes.length} Lỗi Sai`;
+        }
+    }
+    
+    function showReviewScreen() {
+        resultScreen.style.display = 'none';
+        reviewScreen.style.display = 'block';
+        
+        reviewList.innerHTML = ''; // Clear previous review items
+        
+        if (mistakes.length === 0) {
+            reviewList.innerHTML = '<p class="text-gray-500 italic">Chúc mừng, bạn không có lỗi sai nào cần xem lại!</p>';
+            return;
+        }
+
+        mistakes.forEach((item, index) => {
+            const reviewItem = document.createElement('div');
+            reviewItem.className = 'review-item';
+            reviewItem.innerHTML = `
+                <p class="review-question mb-2">${index + 1}. ${item.question}</p>
+                <p class="mb-1"><span class="font-bold">Bạn đã chọn:</span> <span class="review-user-answer">${item.userLabel}. ${item.userAnswer}</span></p>
+                <p class="mb-2"><span class="font-bold">Đáp án đúng:</span> <span class="review-correct-answer">${item.correctLabel}. ${item.correctAnswer}</span></p>
+                <div class="explanation-box !bg-yellow-50 !border-yellow-500 !text-yellow-800">
+                    <p class="font-bold mb-1"><i class="fas fa-search-plus mr-1"></i> Giải thích chi tiết:</p>
+                    <p>${item.explanation}</p>
+                </div>
+            `;
+            reviewList.appendChild(reviewItem);
+        });
+    }
+
+    function restartQuiz() {
+        currentQuestionIndex = 0;
+        score = 0;
+        quizActive = true;
+        mistakes = []; // Reset lỗi sai
+        scoreDisplay.textContent = `⭐ Điểm: 0`;
+        quizScreen.style.display = 'block';
+        resultScreen.style.display = 'none';
+        reviewScreen.style.display = 'none';
+        loadQuestion();
+    }
+
+    // Initialize the quiz
+    window.onload = loadQuestion;
+</script>
+
+</body>
+</html>
